@@ -1,0 +1,10 @@
+version: "3.1"
+services:
+  django:
+    build: .
+    env_file:
+      - .docker-compose_django.env
+    volumes: 
+      - .:/home/django/cataloging-statistics
+    ports: 
+      - "8000:8000"
