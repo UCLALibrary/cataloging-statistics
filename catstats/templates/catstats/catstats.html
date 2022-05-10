@@ -1,0 +1,12 @@
+{% extends 'catstats/base.html' %}
+
+{% block content %}
+<form name="run_report" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <table>
+        {{ form.as_table }}
+    </table>
+    <br>
+    <button type="submit">Run report</button>
+</form>
+{% endblock %}
