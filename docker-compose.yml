@@ -4,6 +4,7 @@ services:
     build: .
     env_file:
       - .docker-compose_django.env
+      - .docker-compose_secrets.env
     volumes: 
       - .:/home/django/cataloging-statistics
     ports: 
