@@ -1,0 +1,226 @@
+import json
+import logging
+import os
+import pprint as pp
+import urllib.parse
+import xmltodict
+from collections import defaultdict
+from copy import deepcopy
+from catstats.scripts.alma_api_client import Alma_Api_Client
+
+logger = logging.getLogger(__name__)
+
+def get_real_column_names(report_json):
+	# Column names are buried in metadata
+	# Get dictionary of column info
+	# This seems to be available only on initial run (first set of data, not subsequent ones),
+	# even if col_names = true parameter is always passed to API.
+	column_names = {}
+	try:
+		column_info = report_json['ResultXml']['rowset']['xsd:schema']['xsd:complexType']['xsd:sequence']['xsd:element']
+		# Create mapping of generic column names (Column0 etc.) to real column names
+		for row in column_info:
+			generic_name = row['@name']
+			real_name = row['@saw-sql:columnHeading']
+			column_names[generic_name] = real_name
+	except KeyError:
+		# OK to swallow this error
+		pass
+	return column_names
+
+def get_filter(yyyymm):
+	# By cat center: too slow for RAMS (17+ minutes, 300+ MB data)
+# 	filter_xml = f'''
+# <sawx:expr xsi:type="sawx:list" op="containsAll" 
+# 	xmlns:saw="com.siebel.analytics.web/report/v1.1" 
+# 	xmlns:sawx="com.siebel.analytics.web/expression/v1.1" 
+# 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+# 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+# >
+# 	<sawx:expr xsi:type="sawx:sqlExpression">LOWER("Bibliographic Details"."Local Param 02")</sawx:expr>
+# 	<sawx:expr xsi:type="xsd:string">$$a {cat_center}</sawx:expr>
+# </sawx:expr>
+# '''
+
+	# By year/month: quick enough, usually 5000-10000 rows
+	# No need for LOWER with just digits
+	filter_xml = f'''
+<sawx:expr xsi:type="sawx:list" op="like" 
+	xmlns:saw="com.siebel.analytics.web/report/v1.1" 
+	xmlns:sawx="com.siebel.analytics.web/expression/v1.1" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+	<sawx:expr xsi:type="sawx:sqlExpression">"Bibliographic Details"."Local Param 02"</sawx:expr>
+	<sawx:expr xsi:type="xsd:string">%$$c {yyyymm}%</sawx:expr>
+</sawx:expr>
+'''
+
+	# Boolean OR not working?
+# 	filter_xml = f'''
+# <sawx:expr xsi:type="sawx:logical" op="or" 
+# 	xmlns:saw="com.siebel.analytics.web/report/v1.1" 
+# 	xmlns:sawx="com.siebel.analytics.web/expression/v1.1" 
+# 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+# 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+# >
+# 	<sawx:expr xsi:type="sawx:list" op="like">
+# 	<sawx:expr xsi:type="sawx:sqlExpression">"Bibliographic Details"."Local Param 02"</sawx:expr>
+# 	<sawx:expr xsi:type="xsd:string">%$$c 202001%</sawx:expr></sawx:expr>
+# 	<sawx:expr xsi:type="sawx:list" op="like">
+# 	<sawx:expr xsi:type="sawx:sqlExpression">"Bibliographic Details"."Local Param 02"</sawx:expr>
+# 	<sawx:expr xsi:type="xsd:string">%$$c 202002%</sawx:expr></sawx:expr>
+# </sawx:expr>
+# '''
+	# Strip out formatting characters which make API unhappy
+	return filter_xml.replace('\n', '').replace('\t', '')
+
+def get_report_data(report):
+	# Report available only in XML
+	# Entire XML report is a "list" with one value, in 'anies' element of json response
+	xml = report['anies'][0]
+	# Convert xml to python dict intermediate format
+	xml_dict = xmltodict.parse(xml)
+	# Convert this to real json
+	report_json = json.loads(json.dumps(xml_dict))
+	# Everything is in QueryResult dict
+	report_json = report_json['QueryResult']
+	
+	# Actual rows of data are a list of dictionaries, in this dictionary
+	rows = report_json['ResultXml']['rowset']['Row']
+
+	# Clean up
+	report_data = {
+		'rows': rows,
+		'column_names': get_real_column_names(report_json),
+		'is_finished': report_json['IsFinished'], # should always exist
+		'resumption_token': report_json.get('ResumptionToken'), # may not exist
+	}
+
+	return report_data
+
+def run_report(api_key, yyyymm):
+	alma = Alma_Api_Client(api_key)
+	report_path = '/shared/University of California Los Angeles (UCLA) 01UCS_LAL/Cataloging/Reports/API/Cataloging Statistics (API)'
+	# From form
+	#yyyymm = '202101'
+	filter_xml = get_filter(yyyymm)
+
+	# No need to URL-encode anything, since requests library does that automatically
+	constant_params = {
+		'col_names': 'true',
+		'limit': 1000 # valid values: 25 to 1000, best as multiple of 25
+	}
+	initial_params = {
+		'path': report_path,
+		'filter': filter_xml,
+	}
+	# First run: use constant + initial parameters merged
+	report = alma.get_analytics_report(constant_params | initial_params)
+	report_data = get_report_data(report)
+	all_rows = report_data['rows']
+	# Preserve column_names as they don't seem to be set on subsequent runs
+	column_names = report_data['column_names']
+
+	# Use the token from first run in all subsequent ones
+	subsequent_params = {
+		'token': report_data['resumption_token'],
+	}
+
+	while report_data['is_finished'] == 'false':
+		# After first run: use constant = subsequent parameters merged
+		report = alma.get_analytics_report(constant_params | subsequent_params)
+		report_data = get_report_data(report)
+		all_rows.extend(report_data['rows'])
+
+	return {'column_names': column_names, 'rows': all_rows}
+
+def row_is_wanted(row, filters):
+	# Compare row values to filters.  If any filter fails, row is not wanted.
+	# Filter values all exist, and strings will be '' if filter is not set.
+	is_wanted = True
+	# Dictionary of lists: code: [val1,...]
+	f962 = row['F962']
+	# Cataloging center in $a: Filter is always a non-empty string
+	if filters['cat_center'] not in f962.get('a', ''):
+		is_wanted = False
+	# Cataloger initials in $b: Filter may be an empty string
+	elif filters['cataloger'] != '' and filters['cataloger'] not in f962.get('b', ''):
+		is_wanted = False
+	# Date in $c is yyyymmdd: Filter is always a non-empty string, yyyymm
+	elif filters['year'] + filters['month'] != f962.get('c', '')[0][0:6]:
+		is_wanted = False
+	# Local value in $k: $k may not exist, and filter may be an empty string
+	elif filters['f962_k_code'] != '' and filters['f962_k_code'] not in f962.get('k', ''):
+		is_wanted = False
+	# Non-962 filters
+	elif filters['language_code'] != '' and filters['language_code'] != row['Language Code']:
+		is_wanted = False
+
+	# for subfield in f962:
+	# 	code, val = subfield[0], subfield[1]
+	# 	# Cataloging center in $a: Filter is always a non-empty string
+	# 	if code == 'a' and val != filters['cat_center']:
+	# 		is_wanted = False
+	# 	# Cataloger initials in $b: Filter may be an empty string
+	# 	elif code == 'b' and (val != filters['cataloger'] and filters['cataloger'] != ''):
+	# 		is_wanted = False
+	# 	# Date in $c: Filter is always a non-empty string
+	# 	# val is yyyymmdd
+	# 	elif code == 'c' and val[0:6] != filters['year'] + filters['month']:
+	# 		is_wanted = False
+	# 	# Local value in $k: $k may not exist, and filter may be an empty string
+	# 	elif code == 'k' and (val != filters['f962_k_code'] and filters['f962_k_code'] != ''):
+	# 		is_wanted = False
+
+
+	return is_wanted
+
+def expand_data(report_data, filters=None):
+	# Analytics data has 1 row per bib record;
+	# multiple 962 fields are combined in ...
+	data = []
+	column_names = report_data['column_names']
+	#pp.pprint(column_names)
+	rows = report_data['rows']
+	pp.pprint(len(rows))
+	for row in rows:
+		# Update keys to use real column names, removing meaningless Column0
+		row = dict([(column_names.get(k), v) for k, v in row.items() if k != 'Column0'])
+		# Split rows where Local Param 02 contains multiple 962 fields, delimited by ';'
+		fld_962s = row['Local Param 02'].split(';')
+		for fld_962 in fld_962s:
+			new_row = deepcopy(row)
+			r = fld_962.strip()
+			# Convert MARC-ish 962 field from string to list of tuples, 
+			# each subfield being (code, value).
+			# E.g.,  '$$a rams $$b lrs $$c 20220401 $$d 1' becomes
+			# [('a', 'rams'), ('b', 'lrs'), ('c', '20220401'), ('d', '1')]
+			#new_row['Local Param 02'] = [tuple(ele.strip().split(' ',1)) for ele in r.split('$$')[1:]]
+			sfd_dict = defaultdict(list)
+			for subfield in r.split('$$')[1:]:
+				code, value = subfield.strip().split(' ', 1)
+				sfd_dict[code].append(value)
+			new_row['F962'] = sfd_dict
+
+			if row_is_wanted(new_row, filters):
+				data.append(new_row)
+	# For debugging
+	# multiples = [r['Column5'] for r in rows if '; ' in r['Column3']]
+	# pp.pprint(multiples)
+	# pp.pprint([r['Column3'] for r in rows if r['Column5'] in multiples], width = 150)
+	# pp.pprint([r['Local Param 02'] for r in data if r['MMS Id'] in multiples], width = 150)
+	return data
+
+def main(filters):
+	api_key = os.getenv('ALMA_API_KEY')
+	pp.pprint(filters)
+	yyyymm = filters['year'] + filters['month']
+	report_data = run_report(api_key, yyyymm)
+	logger.info(f"{len(report_data['rows']) = }")
+	data = expand_data(report_data, filters)
+	logger.info(f'{len(data) = }')
+	return data
+
+if __name__ == '__main__':
+	main()

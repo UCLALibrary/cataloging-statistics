@@ -28,10 +28,11 @@ CAT_CENTERS = [
 YEARS = [(y,y) for y in range(dt.now().year, 2006, -1)]
 
 # Number and first 3 letters of months, in list of tuples for HTML form
-MONTHS= [(m, calendar.month_name[m][0:3]) for m in range(1,13)]
+# Format m 1..12 as strings '01'..'12'
+MONTHS= [(str(m).zfill(2), calendar.month_name[m][0:3]) for m in range(1,13)]
 
 class CatStatsForm(forms.Form):
-	report_list = forms.ChoiceField(
+	report = forms.ChoiceField(
 		choices=REPORTS,
 	)
 	# Cataloging center, from bib 962 $a
@@ -39,7 +40,7 @@ class CatStatsForm(forms.Form):
 		choices=CAT_CENTERS,
 	)
 	# Fiscal year wanted?
-	is_FY = forms.BooleanField(
+	use_FY = forms.BooleanField(
 		required=False, initial=False, label='Use fiscal year?',
 	)
 	# Dates, from bib 962 $c, selected by yyyymm only
@@ -56,7 +57,8 @@ class CatStatsForm(forms.Form):
 				'size': 10,
 				'placeholder': 'Initials',
 			}
-		)
+		),
+		required=False,
 	)
 	# MARC bib language code
 	language_code = forms.CharField(
@@ -67,6 +69,7 @@ class CatStatsForm(forms.Form):
 				'placeholder': 'Code',
 			}
 		),
+		required=False,
 	)
 	# MARC bib place code
 	place_code = forms.CharField(
@@ -77,6 +80,7 @@ class CatStatsForm(forms.Form):
 				'placeholder': 'Code',
 			}
 		),
+		required=False,
 	)
 	# MARC bib 962 $k, used for some projects
 	f962_k_code = forms.CharField(
@@ -86,8 +90,6 @@ class CatStatsForm(forms.Form):
 				'placeholder': '962 $k code',
 			}
 		),
-		label='962 $k code'
+		label='962 $k code',
+		required=False,
 	)
-
-
-
