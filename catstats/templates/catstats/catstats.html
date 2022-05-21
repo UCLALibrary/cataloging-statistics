@@ -1,12 +1,30 @@
 {% extends 'catstats/base.html' %}
 
 {% block content %}
-<form name="run_report" method="POST" enctype="multipart/form-data">
+<form name="run_report" id="run_report" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <table>
         {{ form.as_table }}
     </table>
     <br>
     <button type="submit">Run report</button>
+    <input type="button" value="Reset" onclick="this.form.reset()"/>
 </form>
+<hr/>
+
+<table border="1" id="data-table">
+    <tr>
+    {% for header in headers %}
+        <th>{{ header }}</th>
+    {% endfor %}
+    </tr>
+    {% for row in crosstab_data %}
+    <tr>
+        {% for val in row %}
+            <td {% if forloop.counter != 1 %}class="right"{% endif %}>{{ val }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
 {% endblock %}
