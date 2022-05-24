@@ -145,10 +145,15 @@ def row_is_wanted(row, filters):
 	if filters['cat_center'] not in f962.get('a', ''):
 		is_wanted = False
 	# Cataloger initials in $b: Filter may be an empty string
-	elif filters['cataloger'] != '' and filters['cataloger'] not in f962.get('b', ''):
+	elif filters['cataloger'] != '' and filters['cataloger'] not in f962.get('b', '').lower():
 		is_wanted = False
 	# Date in $c is yyyymmdd: Filter is always a non-empty string, yyyymm
-	elif filters['year'] + filters['month'] != f962.get('c', '')[0][0:6]:
+	# Still unclear if we need to support multiple $d per 962 field.
+	# elif filters['year'] + filters['month'] != f962.get('c', '')[0][0:6]:  # IF USING DICT OF LISTS
+	elif filters['year'] + filters['month'] != f962.get('c', '')[0:6]:
+		is_wanted = False
+	# Difficulty in $d is required: Do not approve rows missing it
+	elif f962.get('d') is None:
 		is_wanted = False
 	# Local value in $k: $k may not exist, and filter may be an empty string
 	elif filters['f962_k_code'] != '' and filters['f962_k_code'] not in f962.get('k', ''):
@@ -157,33 +162,14 @@ def row_is_wanted(row, filters):
 	elif filters['language_code'] != '' and filters['language_code'] != row['Language Code']:
 		is_wanted = False
 
-	# for subfield in f962:
-	# 	code, val = subfield[0], subfield[1]
-	# 	# Cataloging center in $a: Filter is always a non-empty string
-	# 	if code == 'a' and val != filters['cat_center']:
-	# 		is_wanted = False
-	# 	# Cataloger initials in $b: Filter may be an empty string
-	# 	elif code == 'b' and (val != filters['cataloger'] and filters['cataloger'] != ''):
-	# 		is_wanted = False
-	# 	# Date in $c: Filter is always a non-empty string
-	# 	# val is yyyymmdd
-	# 	elif code == 'c' and val[0:6] != filters['year'] + filters['month']:
-	# 		is_wanted = False
-	# 	# Local value in $k: $k may not exist, and filter may be an empty string
-	# 	elif code == 'k' and (val != filters['f962_k_code'] and filters['f962_k_code'] != ''):
-	# 		is_wanted = False
-
-
 	return is_wanted
 
-def expand_data(report_data, filters=None):
+def expand_and_filter_data(report_data, filters=None):
 	# Analytics data has 1 row per bib record;
 	# multiple 962 fields are combined in ...
 	data = []
 	column_names = report_data['column_names']
-	#pp.pprint(column_names)
 	rows = report_data['rows']
-	pp.pprint(len(rows))
 	for row in rows:
 		# Update keys to use real column names, removing meaningless Column0
 		row = dict([(column_names.get(k), v) for k, v in row.items() if k != 'Column0'])
@@ -192,34 +178,30 @@ def expand_data(report_data, filters=None):
 		for fld_962 in fld_962s:
 			new_row = deepcopy(row)
 			r = fld_962.strip()
-			# Convert MARC-ish 962 field from string to list of tuples, 
-			# each subfield being (code, value).
-			# E.g.,  '$$a rams $$b lrs $$c 20220401 $$d 1' becomes
-			# [('a', 'rams'), ('b', 'lrs'), ('c', '20220401'), ('d', '1')]
-			#new_row['Local Param 02'] = [tuple(ele.strip().split(' ',1)) for ele in r.split('$$')[1:]]
-			sfd_dict = defaultdict(list)
-			for subfield in r.split('$$')[1:]:
-				code, value = subfield.strip().split(' ', 1)
-				sfd_dict[code].append(value)
+
+			# Creates dict of lists, which is a pain
+			# sfd_dict = defaultdict(list)
+			# for subfield in r.split('$$')[1:]:
+			# 	code, value = subfield.strip().split(' ', 1)
+			# 	sfd_dict[code].append(value)
+
+			# Creates dictionary: OK except when subfields are repeated, only last value is kept.
+			sfd_dict = {code: value for sfd in fld_962.split('$$')[1:] for code, value in [sfd.strip().split(' ', 1)]}
 			new_row['F962'] = sfd_dict
 
 			if row_is_wanted(new_row, filters):
 				data.append(new_row)
-	# For debugging
-	# multiples = [r['Column5'] for r in rows if '; ' in r['Column3']]
-	# pp.pprint(multiples)
-	# pp.pprint([r['Column3'] for r in rows if r['Column5'] in multiples], width = 150)
-	# pp.pprint([r['Local Param 02'] for r in data if r['MMS Id'] in multiples], width = 150)
+
 	return data
 
 def main(filters):
 	api_key = os.getenv('ALMA_API_KEY')
-	pp.pprint(filters)
+	logger.info(f'{filters = }')
 	yyyymm = filters['year'] + filters['month']
 	report_data = run_report(api_key, yyyymm)
-	logger.info(f"{len(report_data['rows']) = }")
-	data = expand_data(report_data, filters)
-	logger.info(f'{len(data) = }')
+	logger.info(f'Data rows retrieved: {len(report_data["rows"]) = }')
+	data = expand_and_filter_data(report_data, filters)
+	logger.info(f'Data rows after expand/filter: {len(data) = }')
 	return data
 
 if __name__ == '__main__':

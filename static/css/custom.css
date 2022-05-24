@@ -1,0 +1,11 @@
+.right {
+	text-align: right;
+}
+
+#data-table {
+	border: solid 1px black;
+}
+
+#data-table td, #data-table th {
+	padding: 5px;
+}
