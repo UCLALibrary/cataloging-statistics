@@ -10,14 +10,13 @@ def run_report(request):
 	if request.method == 'POST':
 		form = CatStatsForm(request.POST)
 		if form.is_valid():
-			# For convenience
+			# For brevity and convenience.
 			filters = deepcopy(form.cleaned_data)
 			# Lower-case specific user-entered filters for later comparison; 
 			# no non-ASCII support required.
 			lcase_required = ['cataloger', 'f962_k_code', 'language_code', 'place_code']
 			for filter in lcase_required:
 				filters[filter] = filters[filter].lower()
-			logger.info(f'{filters = }')
 
 			report_code = filters['report']
 			if report_code == '01':
@@ -35,7 +34,8 @@ def run_report(request):
 
 			# Get data from Alma Analytics, filtered as needed
 			report_data = get_catstats_data.main(filters)
-			# Applies to reports 01/04 only
+			# Applies to reports 01 and 04 only
+			# TODO: Handle other, simpler reports.
 			headers, crosstab_data = get_crosstab_data.get_crosstab_data(report_data, difficulties)
 		return render(request, 'catstats/catstats.html', {
 			'form': form, 

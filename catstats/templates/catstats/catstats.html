@@ -12,6 +12,10 @@
 </form>
 <hr/>
 
+{% comment %}
+Display report data below the form.
+First data column has text; the rest are numeric.
+{% endcomment %}
 <table border="1" id="data-table">
     <tr>
     {% for header in headers %}
