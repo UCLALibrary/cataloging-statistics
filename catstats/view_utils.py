@@ -1,6 +1,25 @@
 # Supporting functions for view(s)
 from collections import Counter
 
+def get_calendar_year(yyyymm):
+	# Given year/month as yyyymm, return start/end year/months as yyyymm.
+	yyyy = yyyymm[0:4]
+	return (yyyy + '01', yyyy + '12')
+
+def get_fiscal_year(yyyymm):
+	# Given year/month as yyyymm, return (UCLA) fiscal start/end year/months as yyyymm.
+	# yyyymm comes from coded form select list and can be trusted to be valid.
+	yyyy = int(yyyymm[0:4])
+	mm = yyyymm[4:6]
+	if mm >= '07' and mm <= '12':
+		start_year = yyyy
+		end_year = yyyy + 1
+	else:
+		start_year = yyyy - 1
+		end_year = yyyy
+	return (str(start_year) + '07', str(end_year) + '06')
+
+
 def get_difficulties(report_code):
 	if report_code == '01':
 		# 'New' difficulty codes
