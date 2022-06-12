@@ -8,7 +8,7 @@ REPORTS = [
 	('03', '3: Authority contributions'), # was 06
 	('04', '4: Maintenance by format & difficulty'), # was 02
 	('05', '5: Maintenance (broad)'), # was 09
-	('06', '6: Maintenance (details'), # was 10
+	('06', '6: Maintenance (details)'), # was 10
 ]
 # From https://docs.library.ucla.edu/x/EilACw
 CAT_CENTERS = [

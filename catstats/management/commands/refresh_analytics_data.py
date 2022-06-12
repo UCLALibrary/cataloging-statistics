@@ -7,7 +7,7 @@ import xmltodict
 from collections import defaultdict
 from datetime import datetime as dt
 from django.core.management.base import BaseCommand
-from catstats.models import BibRecord, Field962
+from catstats.models import BibRecord, Field962, RepeatableSubfield
 from catstats.scripts.alma_api_client import Alma_Api_Client
 
 def get_real_column_names(report_json):
@@ -150,7 +150,6 @@ def add_data_to_db(report_data):
                   sfd_dict[code].append(value)
                   #pp.pprint(sfd_dict)
                 # Finally, create a Field962 linked to the BibRecord.
-                # Some repeatable subfields need to be collapsed into one delimited string for storage.
                 fld = Field962.objects.create(
                     bib_record=bib,
                     cat_center=sfd_dict.get('a', [''])[0],
@@ -158,15 +157,27 @@ def add_data_to_db(report_data):
                     yyyymm=sfd_dict.get('c', [''])[0][0:6],
                     difficulty=sfd_dict.get('d', [''])[0],
                     maint_info=sfd_dict.get('g', [''])[0],
-                    national_info=list_to_string(sfd_dict.get('h', [''])),
-                    naco_info=list_to_string(sfd_dict.get('i', [''])),
-                    saco_info=list_to_string(sfd_dict.get('j', [''])),
-                    project=list_to_string(sfd_dict.get('k', [''])),
+                    # national_info=list_to_string(sfd_dict.get('h', [''])),
+                    # naco_info=list_to_string(sfd_dict.get('i', [''])),
+                    # saco_info=list_to_string(sfd_dict.get('j', [''])),
+                    # project=list_to_string(sfd_dict.get('k', [''])),
                     )
+                # Repeatable subfields
+                for sfd_code in ['h', 'i', 'j', 'k']:
+                    sfd_list = sfd_dict.get(sfd_code, None)
+                    if sfd_list:
+                        for sfd_value in sfd_list:
+                            RepeatableSubfield.objects.create(
+                                field_962=fld,
+                                subfield_code=sfd_code,
+                                subfield_value=sfd_value,
+                                )
+
     # end for row in report_data
     print(f'{skipped_bibs = }')
     print(f'{BibRecord.objects.count() = }')
     print(f'{Field962.objects.count() = }')
+    print(f'{RepeatableSubfield.objects.count() = }')
 
 def list_to_string(list):
     return ', '.join(list)
@@ -204,4 +215,5 @@ class Command(BaseCommand):
             refresh_all_data()
         else:
             print('TODO: Incremental db update, replacing existing data instead of skipping it')
-
+            report_data = run_report(yyyymm)
+            add_data_to_db(report_data)
