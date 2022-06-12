@@ -16,13 +16,15 @@
 Display report data below the form.
 First data column has text; the rest are numeric.
 {% endcomment %}
+
+{% if display_data and display_data|first %}
 <table border="1" id="data-table">
     <tr>
     {% for header in headers %}
         <th>{{ header }}</th>
     {% endfor %}
     </tr>
-    {% for row in crosstab_data %}
+    {% for row in display_data %}
     <tr>
         {% for val in row %}
             <td {% if forloop.counter != 1 %}class="right"{% endif %}>{{ val }}</td>
@@ -30,5 +32,8 @@ First data column has text; the rest are numeric.
     </tr>
     {% endfor %}
 </table>
+{% else %}
+<p>No data was found.</p>
+{% endif %}
 
 {% endblock %}
