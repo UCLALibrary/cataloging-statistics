@@ -4,7 +4,7 @@ from django.db.models import Count, F
 from django.shortcuts import render
 from .forms import CatStatsForm
 from .models import BibRecord, Field962, RepeatableSubfield
-from catstats.view_utils import get_crosstab_data, get_difficulties, get_summary_data
+from catstats.view_utils import get_crosstab_data, get_difficulties, get_summary_data, get_calendar_year, get_fiscal_year
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,22 @@ def run_report(request):
 			logger.info(f'{filters = }')
 
 			# Always apply form filters to data.
-			# Mandatory filter
+			# Mandatory filter on year & month, but can be different ranges.
 			yyyymm = filters['year'] + filters['month']
-			report_data = Field962.objects.filter(yyyymm__exact=yyyymm)
+			report_period = filters['report_period']
+			if report_period == 'cy':
+				start_yyyymm, end_yyyymm = get_calendar_year(yyyymm)
+			elif report_period == 'fy':
+				start_yyyymm, end_yyyymm = get_fiscal_year(yyyymm)
+			else:
+				# Use the same value for both
+				start_yyyymm, end_yyyymm = (yyyymm, yyyymm)
+			report_data = Field962.objects.filter(yyyymm__gte=start_yyyymm, yyyymm__lte=end_yyyymm)
 			# Mandatory filter, but TODO: Support 'All' as an option
 			report_data = report_data.filter(cat_center__exact=filters['cat_center'])
 			# Optional filters
+			if filters['cataloger'] != '':
+				report_data = report_data.filter(cataloger__exact=filters['cataloger'])
 			if filters['language_code'] != '':
 				report_data = report_data.filter(bib_record__language_code__exact=filters['language_code'])
 			if filters['place_code'] != '':

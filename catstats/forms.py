@@ -29,7 +29,9 @@ YEARS = [(y,y) for y in range(dt.now().year, 2006, -1)]
 
 # Number and first 3 letters of months, in list of tuples for HTML form
 # Format m 1..12 as strings '01'..'12'
-MONTHS= [(str(m).zfill(2), calendar.month_name[m][0:3]) for m in range(1,13)]
+MONTHS = [(str(m).zfill(2), calendar.month_name[m][0:3]) for m in range(1,13)]
+
+REPORT_PERIODS = [('ym', 'Month only'), ('fy', 'Fiscal year'), ('cy', 'Calendar year')]
 
 class CatStatsForm(forms.Form):
 	report = forms.ChoiceField(
@@ -39,16 +41,16 @@ class CatStatsForm(forms.Form):
 	cat_center = forms.ChoiceField(
 		choices=CAT_CENTERS,
 	)
-	# Fiscal year wanted?
-	use_FY = forms.BooleanField(
-		required=False, initial=False, label='Use fiscal year?',
-	)
 	# Dates, from bib 962 $c, selected by yyyymm only
 	year = forms.ChoiceField(
 		choices=YEARS,
 	)
 	month = forms.ChoiceField(
 		choices=MONTHS,
+	)
+	# Report period (given year/month, full calendar year, full fiscal year)
+	report_period = forms.ChoiceField(
+		choices=REPORT_PERIODS
 	)
 	# Cataloger's initials, from bib 962 $b
 	cataloger = forms.CharField(
