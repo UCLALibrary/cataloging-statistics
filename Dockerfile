@@ -3,6 +3,12 @@ FROM python:3.9-slim-bullseye
 # Debian repository management
 RUN apt-get update
 
+# Set correct timezone
+RUN ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+
+# Install dependencies needed to build psycopg2 python module
+RUN apt-get install -y gcc python3-dev libpq-dev
+
 # Create django user and switch context to that user
 RUN useradd -c "django app user" -d /home/django -s /bin/bash -m django
 USER django
@@ -25,6 +31,5 @@ RUN pip install --no-cache-dir -r requirements.txt --user --no-warn-script-locat
 # Expose the typical Django port
 EXPOSE 8000
 
-# For now, use the built-in Django application server when the container starts
-CMD [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
-#CMD [ "sh", "docker_scripts/entrypoint.sh" ]
+# When container starts, run script for environment-specific actions
+CMD [ "sh", "docker_scripts/entrypoint.sh" ]
