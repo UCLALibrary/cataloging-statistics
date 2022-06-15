@@ -1,7 +1,7 @@
 from django.db import models
 
 class BibRecord(models.Model):
-	mmsid = models.CharField(max_length=15)
+	mmsid = models.CharField(max_length=20)
 	language_code = models.CharField(max_length=3)
 	place_code = models.CharField(max_length=3)
 	material_type = models.CharField(max_length=20)
@@ -41,7 +41,7 @@ class RepeatableSubfield(models.Model):
 	field_962 = models.ForeignKey(Field962, on_delete=models.CASCADE)
 	# for repeatable 962 $h, $i, $j, $k
 	subfield_code = models.CharField(max_length=1)
-	subfield_value = models.CharField(max_length=20)
+	subfield_value = models.CharField(max_length=50)
 
 	class Meta:
 		indexes = [

@@ -132,46 +132,46 @@ def add_data_to_db(report_data):
         if BibRecord.objects.filter(mmsid=mmsid).exists():
             skipped_bibs += 1
         else:
-            # First save the bib-level data
-            bib = BibRecord.objects.create(
-                mmsid=mmsid,
-                language_code=row.get('Language Code', ''),
-                place_code=row.get('Place Code', ''),
-                material_type=row.get('Material Type', ''),
-                resource_type=row.get('Resource Type', '')
-                )
-            # Split rows where Local Param 02 contains multiple 962 fields, delimited by ';'
-            for fld_962 in row['Local Param 02'].split(';'):
-                r = fld_962.strip()
-                # Creates dict of lists, which is a pain
-                sfd_dict = defaultdict(list)
-                for subfield in r.split('$$')[1:]:
-                  code, value = subfield.strip().split(' ', 1)
-                  sfd_dict[code].append(value)
-                  #pp.pprint(sfd_dict)
-                # Finally, create a Field962 linked to the BibRecord.
-                fld = Field962.objects.create(
-                    bib_record=bib,
-                    cat_center=sfd_dict.get('a', [''])[0],
-                    cataloger=sfd_dict.get('b', [''])[0],
-                    yyyymm=sfd_dict.get('c', [''])[0][0:6],
-                    difficulty=sfd_dict.get('d', [''])[0],
-                    maint_info=sfd_dict.get('g', [''])[0],
-                    # national_info=list_to_string(sfd_dict.get('h', [''])),
-                    # naco_info=list_to_string(sfd_dict.get('i', [''])),
-                    # saco_info=list_to_string(sfd_dict.get('j', [''])),
-                    # project=list_to_string(sfd_dict.get('k', [''])),
+            try:
+                # First save the bib-level data
+                bib = BibRecord.objects.create(
+                    mmsid=mmsid,
+                    language_code=row.get('Language Code', ''),
+                    place_code=row.get('Place Code', ''),
+                    material_type=row.get('Material Type', ''),
+                    resource_type=row.get('Resource Type', '')
                     )
-                # Repeatable subfields
-                for sfd_code in ['h', 'i', 'j', 'k']:
-                    sfd_list = sfd_dict.get(sfd_code, None)
-                    if sfd_list:
-                        for sfd_value in sfd_list:
-                            RepeatableSubfield.objects.create(
-                                field_962=fld,
-                                subfield_code=sfd_code,
-                                subfield_value=sfd_value,
-                                )
+                # Split rows where Local Param 02 contains multiple 962 fields, delimited by ';'
+                for fld_962 in row['Local Param 02'].split(';'):
+                    r = fld_962.strip()
+                    # Creates dict of lists, which is a pain
+                    sfd_dict = defaultdict(list)
+                    for subfield in r.split('$$')[1:]:
+                      code, value = subfield.strip().split(' ', 1)
+                      sfd_dict[code].append(value)
+                    # Finally, create a Field962 linked to the BibRecord.
+                    fld = Field962.objects.create(
+                        bib_record=bib,
+                        cat_center=sfd_dict.get('a', [''])[0],
+                        cataloger=sfd_dict.get('b', [''])[0],
+                        yyyymm=sfd_dict.get('c', [''])[0][0:6],
+                        difficulty=sfd_dict.get('d', [''])[0],
+                        maint_info=sfd_dict.get('g', [''])[0],
+                        )
+                    # Repeatable subfields
+                    for sfd_code in ['h', 'i', 'j', 'k']:
+                        sfd_list = sfd_dict.get(sfd_code, None)
+                        if sfd_list:
+                            for sfd_value in sfd_list:
+                                RepeatableSubfield.objects.create(
+                                    field_962=fld,
+                                    subfield_code=sfd_code,
+                                    subfield_value=sfd_value,
+                                    )
+            except Exception as ex:
+                print(ex)
+                pp.pprint(row)
+
 
     # end for row in report_data
     print(f'{skipped_bibs = }')
