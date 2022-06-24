@@ -21,3 +21,7 @@
 .idea/
 *.tmproj
 .vscode/
+
+# Environment-specific Values files
+/test-catalogingstatistics-values.yaml
+/prod-catalogingstatistics-values.yaml
