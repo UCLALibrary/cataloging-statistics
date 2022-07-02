@@ -8,13 +8,12 @@
     </table>
     <br>
     <button type="submit">Run report</button>
-    <input type="button" value="Reset" onclick="this.form.reset()"/>
 </form>
 <hr/>
 
 {% comment %}
 Display report data below the form.
-First data column has text; the rest are numeric.
+First data column has text; the rest are numeric and get right-aligned.
 {% endcomment %}
 
 {% if display_data and display_data|first %}
@@ -25,7 +24,7 @@ First data column has text; the rest are numeric.
     {% endfor %}
     </tr>
     {% for row in display_data %}
-    <tr>
+    <tr {% if forloop.last %}class="bold"{% endif %}>
         {% for val in row %}
             <td {% if forloop.counter != 1 %}class="right"{% endif %}>{{ val }}</td>
         {% endfor %}
