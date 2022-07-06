@@ -25,8 +25,7 @@ jobs:
         uses: KJ002/read-yaml@1.6
         with:
           file: 'charts/test-catalogingstatistics-values.yaml'
-          # Asking if the (initial) added app name is needed
-          key-path: '["cataloging-statistics", "image", "tag"]'
+          key-path: '["image", "tag"]'
 
       - name: Display yaml info
         run: echo "${{ steps.yaml-data.outputs.data }}"
