@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cataloging-statistics.fullname" . }}
+  namespace: cataloging-statistics{{ .Values.django.env.run_env }}
+  labels:
+    {{- include "cataloging-statistics.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cataloging-statistics.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cataloging-statistics.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "cataloging-statistics.fullname" . }}-configmap
+            - secretRef:
+                name: {{ include "cataloging-statistics.fullname" . }}-secrets
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /report
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ range .Values.django.env.allowed_hosts }}{{ . }}{{ end }}
+          readinessProbe:
+            httpGet:
+              path: /report
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ range .Values.django.env.allowed_hosts }}{{ . }}{{ end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

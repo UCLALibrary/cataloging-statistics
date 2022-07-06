@@ -130,6 +130,9 @@ dmypy.json
 
 # Local secrets
 *secret*
+# But allow Helm secrets
+!secrets.yaml
+!externalsecret.yaml
 
 # Local static files collected when testing gunicorn and whitenoise
 staticfiles/
