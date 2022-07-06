@@ -12,6 +12,7 @@ REPORTS = [
 ]
 # From https://docs.library.ucla.edu/x/EilACw
 CAT_CENTERS = [
+	('ALL', '--- ALL ---'),
 	('clk', 'Clark Library'),
 	('eal', 'East Asian Library'),
 	('ethno', 'Ethnomusicology Archive'),

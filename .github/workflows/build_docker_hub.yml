@@ -20,9 +20,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Read chart yaml to get version for docker tag
+        id: yaml-data
+        uses: KJ002/read-yaml@1.6
+        with:
+          file: 'charts/test-catalogingstatistics-values.yaml'
+          # Asking if the (initial) added app name is needed
+          key-path: '["cataloging-statistics", "image", "tag"]'
+
+      - name: Display yaml info
+        run: echo "${{ steps.yaml-data.outputs.data }}"
+
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: uclalibrary/cataloging-statistics:latest
+          tags: uclalibrary/cataloging-statistics:${{ steps.yaml-data.outputs.data }}

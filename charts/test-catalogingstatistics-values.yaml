@@ -7,7 +7,7 @@ cataloging-statistics:
 
   image:
     repository: uclalibrary/cataloging-statistics
-    tag: latest
+    tag: v0.9.5
     pullPolicy: Always
 
   nameOverride: ""
