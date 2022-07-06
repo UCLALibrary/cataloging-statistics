@@ -33,8 +33,9 @@ def run_report(request):
 				# Use the same value for both
 				start_yyyymm, end_yyyymm = (yyyymm, yyyymm)
 			report_data = Field962.objects.filter(yyyymm__gte=start_yyyymm, yyyymm__lte=end_yyyymm)
-			# Mandatory filter, but TODO: Support 'All' as an option
-			report_data = report_data.filter(cat_center__exact=filters['cat_center'])
+			# Mandatory filter, but ALL is a special case (no filtering if ALL is chosen)
+			if filters['cat_center'] != 'ALL':
+				report_data = report_data.filter(cat_center__exact=filters['cat_center'])
 			# Optional filters
 			if filters['cataloger'] != '':
 				report_data = report_data.filter(cataloger__exact=filters['cataloger'])
