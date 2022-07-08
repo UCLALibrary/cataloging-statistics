@@ -37,6 +37,7 @@ django:
     #  - localhost
     #  - 127.0.0.1
     #  - [::1]
+    csrf_trusted_origins: []
     db_backend: ""
     db_name: ""
     db_user: ""
