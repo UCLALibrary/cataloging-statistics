@@ -14,6 +14,9 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    extra_hosts:
+      # For access to remote database via ssh tunnel on host
+      - "host.docker.internal:host-gateway"
   db:
     image: postgres:12
     env_file:

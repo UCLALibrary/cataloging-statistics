@@ -10,6 +10,8 @@ from django.core.management.base import BaseCommand
 from catstats.models import BibRecord, Field962, RepeatableSubfield
 from catstats.scripts.alma_api_client import Alma_Api_Client
 
+logger = logging.getLogger(__name__)
+
 def get_real_column_names(report_json):
     # Column names are buried in metadata
     # Get dictionary of column info
@@ -71,7 +73,7 @@ def get_report_data(report):
 
 
 def run_report(filter):
-    print(f'Running with {filter = }....')
+    logger.info(f'Running with {filter = }....')
     api_key = os.getenv('ALMA_API_KEY')
     alma = Alma_Api_Client(api_key)
     report_path = '/shared/University of California Los Angeles (UCLA) 01UCS_LAL/Cataloging/Reports/API/Cataloging Statistics (API)'
@@ -89,7 +91,7 @@ def run_report(filter):
     }
     # First run: use constant + initial parameters merged
     batch_number = 1
-    print(f'Fetching batch #{batch_number}')
+    logger.info(f'Fetching batch #{batch_number}')
     report = alma.get_analytics_report(constant_params | initial_params)
     report_data = get_report_data(report)
     all_rows = report_data['rows']
@@ -103,7 +105,7 @@ def run_report(filter):
 
     while report_data['is_finished'] == 'false':
         batch_number += 1
-        print(f'Fetching batch #{batch_number}')
+        logger.info(f'Fetching batch #{batch_number}')
         # After first run: use constant = subsequent parameters merged
         try:
             report = alma.get_analytics_report(constant_params | subsequent_params)
@@ -124,7 +126,7 @@ def run_report(filter):
     return data
 
 def add_data_to_db(report_data):
-    print(f'{len(report_data) = }')
+    logger.info(f'{len(report_data) = }')
     skipped_bibs = 0
     for row in report_data:
         # Each row is one bib, with 1+ 962 fields embeded in 'Local Param 02'.
@@ -174,10 +176,10 @@ def add_data_to_db(report_data):
 
 
     # end for row in report_data
-    print(f'{skipped_bibs = }')
-    print(f'{BibRecord.objects.count() = }')
-    print(f'{Field962.objects.count() = }')
-    print(f'{RepeatableSubfield.objects.count() = }')
+    logger.info(f'{skipped_bibs = }')
+    logger.info(f'{BibRecord.objects.count() = }')
+    logger.info(f'{Field962.objects.count() = }')
+    logger.info(f'{RepeatableSubfield.objects.count() = }')
 
 def list_to_string(list):
     return ', '.join(list)
@@ -195,7 +197,7 @@ def refresh_all_data():
                 report_data = run_report(year)
                 add_data_to_db(report_data)
             except Exception as ex:
-                print(f'ERROR: Failure {attempt} at {year}: {ex}')
+                logger.error(f'ERROR: Failure {attempt} at {year}: {ex}')
             else:
                 break
         else:

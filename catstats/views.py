@@ -1,6 +1,8 @@
+import asyncio
 import logging
 from copy import deepcopy
 from django.db.models import Count, F
+from django.http import HttpResponse
 from django.shortcuts import render
 from .forms import CatStatsForm
 from .models import BibRecord, Field962, RepeatableSubfield
@@ -121,3 +123,23 @@ def run_report(request):
 		form = CatStatsForm()
 		report_data = []
 		return render(request, 'catstats/catstats.html', {'form': form})
+
+
+def view_logs(request):
+	# QAD way to view log file in deployed environment
+    log_file = 'logs/application.log'
+    try:
+        with open(log_file, 'r') as f:
+            log_data = f.read()
+    except FileNotFoundError as ex:
+        log_data = f'Log file {log_file} not found'
+
+    return render(request, 'catstats/logs.html', {'log_data': log_data})
+
+
+async def load_data(request):
+	# QAD way to run management command asynchronously
+	yyyymm = request.GET['yyyymm']
+	cmd = f'python manage.py refresh_analytics_data -m {yyyymm}'
+	proc = await asyncio.create_subprocess_shell(cmd)
+	return HttpResponse(f'Loading data for {yyyymm} - see log for results')
