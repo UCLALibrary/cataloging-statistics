@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: uclalibrary/cataloging-statistics
-  tag: v0.9.8
+  tag: v1.0.1
   pullPolicy: Always
 
 nameOverride: ""
