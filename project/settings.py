@@ -24,6 +24,10 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG")
+# Helm charts pass "false" instead of Python False, and
+# Python "false" is True...
+if DEBUG in ["false", "False"]:
+    DEBUG = False
 
 # Define the list of allowed hosts to connect to this application
 # This is passed in via the environment variable DJANGO_ALLOWED_HOSTS
@@ -37,57 +41,57 @@ CSRF_TRUSTED_ORIGINS = list(os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS").split(","))
 
 INSTALLED_APPS = [
     # Enable whitenoise in development per http://whitenoise.evans.io/en/stable/django.html
-    'whitenoise.runserver_nostatic',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'catstats',
+    "whitenoise.runserver_nostatic",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "catstats",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'project.urls'
+ROOT_URLCONF = "project.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'project.wsgi.application'
+WSGI_APPLICATION = "project.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 DATABASES = {
-    'default': {
-        'ENGINE': os.getenv("DJANGO_DB_BACKEND"),
-        'NAME': os.getenv("DJANGO_DB_NAME"),
-        'USER': os.getenv("DJANGO_DB_USER"),
-        'PASSWORD': os.getenv("DJANGO_DB_PASSWORD"),
-        'HOST': os.getenv("DJANGO_DB_HOST"),
-        'PORT': os.getenv("DJANGO_DB_PORT"),
+    "default": {
+        "ENGINE": os.getenv("DJANGO_DB_BACKEND"),
+        "NAME": os.getenv("DJANGO_DB_NAME"),
+        "USER": os.getenv("DJANGO_DB_USER"),
+        "PASSWORD": os.getenv("DJANGO_DB_PASSWORD"),
+        "HOST": os.getenv("DJANGO_DB_HOST"),
+        "PORT": os.getenv("DJANGO_DB_PORT"),
     }
 }
 
@@ -96,16 +100,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -113,21 +117,21 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'America/Los_Angeles'
+TIME_ZONE = "America/Los_Angeles"
 
 USE_I18N = True
 
 USE_TZ = True
 
 # Django will add this URL, and serve static files from here
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 # Where on the file system should Django find our custom static files?
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 # Where will all static files - our custom + Django's?
 # This matters only when not using runserver, and using collectstaticfiles.
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # There is a timing issue with Whitenoise that is described here:
 # https://github.com/evansd/whitenoise/issues/215
@@ -137,39 +141,39 @@ if not os.path.isdir(STATIC_ROOT):
     os.makedirs(STATIC_ROOT, mode=0o755)
 
 # Improved caching with whitenoise when running in production.
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Logging
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {name} {module} {message}',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {module} {message}",
             # Shortcut for str.format()
-            'style': '{',
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': './logs/application.log',
-            'formatter': 'verbose',
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "./logs/application.log",
+            "formatter": "verbose",
         },
     },
-    'loggers': {
+    "loggers": {
         # Unnamed logger should capture from all loggers
-        '': {
-            'handlers': ['file'],
-            'level': os.getenv('DJANGO_LOG_LEVEL'),
+        "": {
+            "handlers": ["file"],
+            "level": os.getenv("DJANGO_LOG_LEVEL"),
         },
     },
 }
