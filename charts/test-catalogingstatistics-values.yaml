@@ -14,7 +14,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   
 ingress:
@@ -54,9 +54,9 @@ django:
     enabled: "true"
     env:
       # Application database used by django
-      db_password: "/systems/testsoftwaredev/cataloging-statisticstest/db_password"
-      django_secret_key: "/systems/testsoftwaredev/cataloging-statisticstest/django_secret_key"
-      alma_api_key: "/systems/testsoftwaredev/cataloging-statisticstest/alma_api_key"
+      db_password: "/systems/testrke01/cataloging-statisticstest/db_password"
+      django_secret_key: "/systems/testrke01/cataloging-statisticstest/django_secret_key"
+      alma_api_key: "/systems/testrke01/cataloging-statisticstest/alma_api_key"
 
 resources:
   limits:
