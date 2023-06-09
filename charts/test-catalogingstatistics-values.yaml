@@ -52,6 +52,8 @@ django:
 
   externalSecrets:
     enabled: "true"
+    annotations: 
+      argocd.argoproj.io/sync-wave: "-1"
     env:
       # Application database used by django
       db_password: "/systems/testrke01/cataloging-statisticstest/db_password"
