@@ -24,7 +24,7 @@ jobs:
         id: yaml-data
         uses: KJ002/read-yaml@1.6
         with:
-          file: 'charts/test-catalogingstatistics-values.yaml'
+          file: 'charts/prod-catalogingstatistics-values.yaml'
           key-path: '["image", "tag"]'
 
       - name: Display yaml info
