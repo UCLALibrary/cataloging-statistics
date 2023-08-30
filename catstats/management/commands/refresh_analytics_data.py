@@ -147,7 +147,7 @@ def add_data_to_db(report_data):
                 resource_type=row.get('Resource Type', '')
                 )
             # Split rows where Local Param 02 contains multiple 962 fields, delimited by ';'
-            for fld_962 in row['Local Param 02'].split(';'):
+            for fld_962 in row['962 - Local Param 02'].split(';'):
                 r = fld_962.strip()
                 # Creates dict of lists, which is a pain
                 sfd_dict = defaultdict(list)
