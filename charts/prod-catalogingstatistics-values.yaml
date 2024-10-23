@@ -46,7 +46,7 @@ django:
     db_backend: "django.db.backends.postgresql_psycopg2"
     db_name: "cataloging_stats"
     db_user: "cataloging_stats"
-    db_host: "p-d-postgres01-rhel8.library.ucla.edu"
+    db_host: "p-d-postgres.library.ucla.edu"
     db_port: 5432
     log_level: "INFO"
 
