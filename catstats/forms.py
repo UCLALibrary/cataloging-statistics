@@ -24,10 +24,6 @@ CAT_CENTERS = [
     ("ues", "University Elementary School"),
 ]
 
-# Years from 2007 to current year, in list of tuples for HTML form
-# Final value of range isn't included
-YEARS = [(y, y) for y in range(dt.now().year, 2006, -1)]
-
 # Number and first 3 letters of months, in list of tuples for HTML form
 # Format m 1..12 as strings '01'..'12'
 MONTHS = [(str(m).zfill(2), calendar.month_name[m][0:3]) for m in range(1, 13)]
@@ -35,7 +31,21 @@ MONTHS = [(str(m).zfill(2), calendar.month_name[m][0:3]) for m in range(1, 13)]
 REPORT_PERIODS = [("ym", "Month only"), ("fy", "Fiscal year"), ("cy", "Calendar year")]
 
 
+def _get_years() -> list[tuple[int, int]]:
+    # Years from 2007 to current year, in list of tuples for HTML form
+    # Final value of range isn't included
+    return [(y, y) for y in range(dt.now().year, 2006, -1)]
+
+
 class CatStatsForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # This needs to be set in __init__() so that it is evaluated whenever
+        # the form is loaded. Otherwise, these values are calculated and set
+        # only at application start, and can be wrong if the application is not
+        # restarted when a new year begins.
+        self.fields["year"] = forms.ChoiceField(choices=_get_years())
+
     report = forms.ChoiceField(
         choices=REPORTS,
     )
@@ -43,10 +53,10 @@ class CatStatsForm(forms.Form):
     cat_center = forms.ChoiceField(
         choices=CAT_CENTERS,
     )
-    # Dates, from bib 962 $c, selected by yyyymm only
-    year = forms.ChoiceField(
-        choices=YEARS,
-    )
+    # Placeholder for year so it's positioned correctly;
+    # values are set in __init__().
+    year = forms.ChoiceField()
+    # year and month are combined for searching the bib 962 $c, selected by yyyymm only
     month = forms.ChoiceField(
         choices=MONTHS,
     )
