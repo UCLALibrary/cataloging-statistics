@@ -6,4 +6,5 @@ urlpatterns = [
     path("report", views.run_report, name="run_report"),
     path("load_data", views.load_data, name="load_data"),
     path("view_logs", views.view_logs, name="view_logs"),
+    path("release_notes", views.release_notes, name="release_notes"),
 ]

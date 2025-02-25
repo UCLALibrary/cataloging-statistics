@@ -2,7 +2,7 @@ import asyncio
 import logging
 from copy import deepcopy
 from django.db.models import Count, F
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from .forms import CatStatsForm
 from .models import Field962, RepeatableSubfield
@@ -17,7 +17,7 @@ from catstats.view_utils import (
 logger = logging.getLogger(__name__)
 
 
-def run_report(request):
+def run_report(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = CatStatsForm(request.POST)
         if form.is_valid():
@@ -151,7 +151,7 @@ def run_report(request):
         return render(request, "catstats/catstats.html", {"form": form})
 
 
-def view_logs(request):
+def view_logs(request: HttpRequest) -> HttpResponse:
     # QAD way to view log file in deployed environment
     log_file = "logs/application.log"
     try:
@@ -163,7 +163,12 @@ def view_logs(request):
     return render(request, "catstats/logs.html", {"log_data": log_data})
 
 
-async def load_data(request):
+def release_notes(request: HttpRequest) -> HttpResponse:
+    """Display release notes."""
+    return render(request, "catstats/release_notes.html")
+
+
+async def load_data(request: HttpRequest) -> HttpResponse:
     # QAD way to run management command asynchronously
     yyyymm = request.GET["yyyymm"]
     cmd = f"python manage.py refresh_analytics_data -m {yyyymm}"
