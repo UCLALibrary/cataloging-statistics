@@ -7,7 +7,7 @@ services:
       - .docker-compose_django.env
       - .docker-compose_db.env
       # Local development only
-      # - .docker-compose_secrets.env
+      - .docker-compose_secrets.env
     ports: 
       # Variables here must be set in environment, or in .env - not in any env_file
       - "8000:8000"
