@@ -1,6 +1,6 @@
-Django == 4.2.19
+Django == 5.2.1
 requests == 2.32.3
 xmltodict == 0.13.0
-psycopg2==2.9.7
+psycopg==3.2.9
 gunicorn==23.0.0
 whitenoise==6.5.0

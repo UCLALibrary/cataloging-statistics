@@ -11,7 +11,7 @@ fi
 
 # Check when database is ready for connections
 echo "Checking database connectivity..."
-until python -c 'import os, psycopg2 ; conn = psycopg2.connect(host=os.environ.get("DJANGO_DB_HOST"),user=os.environ.get("DJANGO_DB_USER"),password=os.environ.get("DJANGO_DB_PASSWORD"),dbname=os.environ.get("DJANGO_DB_NAME"))' ; do
+until python -c 'import os, psycopg ; conn = psycopg.connect(host=os.environ.get("DJANGO_DB_HOST"),user=os.environ.get("DJANGO_DB_USER"),password=os.environ.get("DJANGO_DB_PASSWORD"),dbname=os.environ.get("DJANGO_DB_NAME"))' ; do
   echo "Database connection not ready - waiting"
   sleep 5
 done
