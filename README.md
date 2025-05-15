@@ -17,11 +17,11 @@ The development environment requires:
 
 #### PostgreSQL container
 
-The development database is PostgreSQL 12, to match our central production database environment.
+The development database is PostgreSQL 16, to match our central production database environment.
 
 #### Django container
 
-This uses Django 4.2, which requires Python 3.8 or later; the container uses Python 3.12.
+This uses Django 5.2 LTS, which requires Python 3.10 or later; the container uses Python 3.12.
 It shouldn't matter what version of Python is used locally, as all code runs in the container.
 
 The container runs via `docker_scripts/entrypoint.sh`, which
