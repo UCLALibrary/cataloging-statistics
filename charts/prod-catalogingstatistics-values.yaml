@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: uclalibrary/cataloging-statistics
-  tag: v1.0.7
+  tag: v1.0.8
   pullPolicy: Always
 
 nameOverride: ""
@@ -43,7 +43,7 @@ django:
       - catstats.library.ucla.edu
     csrf_trusted_origins:
       - https://catstats.library.ucla.edu
-    db_backend: "django.db.backends.postgresql_psycopg2"
+    db_backend: "django.db.backends.postgresql"
     db_name: "cataloging_stats"
     db_user: "cataloging_stats"
     db_host: "p-d-postgres.library.ucla.edu"

@@ -1,14 +1,14 @@
 services:
   django:
     build: .
-    volumes: 
+    volumes:
       - .:/home/django/cataloging-statistics
     env_file:
       - .docker-compose_django.env
       - .docker-compose_db.env
       # Local development only
       - .docker-compose_secrets.env
-    ports: 
+    ports:
       # Variables here must be set in environment, or in .env - not in any env_file
       - "8000:8000"
     depends_on:
@@ -17,7 +17,7 @@ services:
       # For access to remote database via ssh tunnel on host
       - "host.docker.internal:host-gateway"
   db:
-    image: postgres:12
+    image: postgres:16
     env_file:
       - .docker-compose_db.env
     volumes:
