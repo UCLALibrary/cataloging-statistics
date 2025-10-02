@@ -4,3 +4,6 @@ xmltodict == 0.13.0
 psycopg==3.2.9
 gunicorn==23.0.0
 whitenoise==6.5.0
+
+# Install the Alma API client from GitHub.
+git+https://github.com/UCLALibrary/alma-api-client

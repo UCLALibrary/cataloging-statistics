@@ -7,7 +7,8 @@ RUN apt-get update
 RUN ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
 
 # Install dependencies needed to build psycopg python module
-RUN apt-get install -y gcc python3-dev libpq-dev
+# Additionally install git, so we can install the alma_api_client package from github.
+RUN apt-get install -y gcc python3-dev libpq-dev git
 
 # Create django user and switch context to that user
 RUN useradd -c "django app user" -d /home/django -s /bin/bash -m django
