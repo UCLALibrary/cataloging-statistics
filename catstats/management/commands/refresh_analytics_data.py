@@ -1,8 +1,6 @@
-import json
 import logging
 import os
 import pprint as pp
-import xmltodict
 from collections import defaultdict
 from datetime import datetime as dt
 from django.core.management.base import BaseCommand
