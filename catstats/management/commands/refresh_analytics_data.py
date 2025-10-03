@@ -1,36 +1,13 @@
-import json
 import logging
 import os
 import pprint as pp
-import xmltodict
 from collections import defaultdict
 from datetime import datetime as dt
 from django.core.management.base import BaseCommand
 from catstats.models import BibRecord, Field962, RepeatableSubfield
-from catstats.scripts.alma_api_client import Alma_Api_Client
+from alma_api_client import AlmaAnalyticsClient, APIError
 
 logger = logging.getLogger(__name__)
-
-
-def get_real_column_names(report_json):
-    # Column names are buried in metadata
-    # Get dictionary of column info
-    # This seems to be available only on initial run (first set of data, not subsequent ones),
-    # even if col_names = true parameter is always passed to API.
-    column_names = {}
-    try:
-        column_info = report_json["ResultXml"]["rowset"]["xsd:schema"][
-            "xsd:complexType"
-        ]["xsd:sequence"]["xsd:element"]
-        # Create mapping of generic column names (Column0 etc.) to real column names
-        for row in column_info:
-            generic_name = row["@name"]
-            real_name = row["@saw-sql:columnHeading"]
-            column_names[generic_name] = real_name
-    except KeyError:
-        # OK to swallow this error
-        pass
-    return column_names
 
 
 def get_filter(yyyymm):
@@ -51,35 +28,10 @@ def get_filter(yyyymm):
     return filter_xml.replace("\n", "").replace("\t", "")
 
 
-def get_report_data(report):
-    # Report available only in XML
-    # Entire XML report is a "list" with one value, in 'anies' element of json response
-    xml = report["anies"][0]
-    # Convert xml to python dict intermediate format
-    xml_dict = xmltodict.parse(xml)
-    # Convert this to real json
-    report_json = json.loads(json.dumps(xml_dict))
-    # Everything is in QueryResult dict
-    report_json = report_json["QueryResult"]
-
-    # Actual rows of data are a list of dictionaries, in this dictionary
-    rows = report_json["ResultXml"]["rowset"]["Row"]
-
-    # Clean up
-    report_data = {
-        "rows": rows,
-        "column_names": get_real_column_names(report_json),
-        "is_finished": report_json["IsFinished"],  # should always exist
-        "resumption_token": report_json.get("ResumptionToken"),  # may not exist
-    }
-
-    return report_data
-
-
 def run_report(filter):
-    logger.info(f"Running with {filter = }....")
+    logger.info(f"Running with {filter=}....")
     api_key = os.getenv("ALMA_API_KEY")
-    alma = Alma_Api_Client(api_key)
+    alma_client = AlmaAnalyticsClient(api_key)
     report_path = (
         "/shared/University of California Los Angeles (UCLA) 01UCS_LAL/Cataloging"
         "/Reports/API/Cataloging Statistics (API)"
@@ -87,54 +39,20 @@ def run_report(filter):
 
     filter_xml = get_filter(filter)
 
-    # No need to URL-encode anything, since requests library does that automatically
-    constant_params = {
-        "col_names": "true",
-        "limit": 1000,  # valid values: 25 to 1000, best as multiple of 25
-    }
-    initial_params = {
-        "path": report_path,
-        "filter": filter_xml,
-    }
-    # First run: use constant + initial parameters merged
-    batch_number = 1
-    logger.info(f"Fetching batch #{batch_number}")
-    report = alma.get_analytics_report(constant_params | initial_params)
-    report_data = get_report_data(report)
-    all_rows = report_data["rows"]
-    # Preserve column_names as they don't seem to be set on subsequent runs
-    column_names = report_data["column_names"]
+    alma_client.set_report_path(report_path)
+    alma_client.set_filter_xml(filter_xml)
 
-    # Use the token from first run in all subsequent ones
-    subsequent_params = {
-        "token": report_data["resumption_token"],
-    }
+    try:
+        report = alma_client.get_report()
+    except APIError as ex:
+        logger.error(f"APIError on initial get_report(): {ex}")
+        raise
 
-    while report_data["is_finished"] == "false":
-        batch_number += 1
-        logger.info(f"Fetching batch #{batch_number}")
-        # After first run: use constant = subsequent parameters merged
-        try:
-            report = alma.get_analytics_report(constant_params | subsequent_params)
-            report_data = get_report_data(report)
-            all_rows.extend(report_data["rows"])
-        except Exception as ex:
-            pp.pprint(ex)
-            pp.pprint(report["api_response"])
-            raise
-
-    # Replace 'Column0' etc. names with real names, discarding unwanted Column0
-    data = []
-    for row in all_rows:
-        # Update keys to use real column names, removing meaningless Column0
-        row = dict([(column_names.get(k), v) for k, v in row.items() if k != "Column0"])
-        data.append(row)
-
-    return data
+    return report
 
 
 def add_data_to_db(report_data):
-    logger.info(f"{len(report_data) = }")
+    logger.info(f"{len(report_data)=}")
     replaced_bibs = 0
     for row in report_data:
         # Each row is one bib, with 1+ 962 fields embeded in 'Local Param 02'.
@@ -186,10 +104,10 @@ def add_data_to_db(report_data):
             pp.pprint(row)
 
     # end for row in report_data
-    logger.info(f"{replaced_bibs = }")
-    logger.info(f"{BibRecord.objects.count() = }")
-    logger.info(f"{Field962.objects.count() = }")
-    logger.info(f"{RepeatableSubfield.objects.count() = }")
+    logger.info(f"{replaced_bibs=}")
+    logger.info(f"{BibRecord.objects.count()=}")
+    logger.info(f"{Field962.objects.count()=}")
+    logger.info(f"{RepeatableSubfield.objects.count()=}")
 
 
 def list_to_string(list):
