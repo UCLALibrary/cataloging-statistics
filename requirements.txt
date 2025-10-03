@@ -1,9 +1,9 @@
 Django == 5.2.6
-requests == 2.32.4
-xmltodict == 0.14.2
 psycopg==3.2.9
 gunicorn==23.0.0
 whitenoise==6.5.0
+# requests and xmltodict are also used in this application, 
+# but they are brought in by the Alma API client.
 
 # Install the Alma API client from GitHub.
 git+https://github.com/UCLALibrary/alma-api-client
